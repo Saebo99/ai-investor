@@ -9,3 +9,13 @@ These are its fundamental strategic points:
 2. The goal is always to find stocks that can be held for a several months to several years.
 3. Stocks distributing dividends are preferred.
 4. Diversification, in both number of companies and number of industries, is key without spreading too thin.
+
+## Getting Started
+
+```bash
+cp .env.example .env  # fill in Anthropic, EODHD, and Nordnet credentials
+pip install -e .[dev]
+ai-investor run-shortlist
+```
+
+The daily orchestration is exposed as `ai-investor run-daily`, which refreshes the shortlist, gathers EODHD fundamentals/news, drafts theses with Claude, requests CLI approval, and (once implemented) submits approved orders to the Nordnet API.

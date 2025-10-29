@@ -1,0 +1,42 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ai-investor"
+version = "0.1.0"
+description = "Agentic long-term investing assistant using Claude Agent SDK"
+authors = [{name = "Saebo99"}]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "anthropic>=0.35.0",
+    "httpx>=0.27.0",
+    "pydantic>=2.7.0",
+    "python-dotenv>=1.0.1",
+    "typer>=0.12.0",
+    "apscheduler>=3.10.4",
+    "rich>=13.7.0",
+    "pandas>=2.2.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.6.0",
+    "mypy>=1.10.0"
+]
+
+[project.scripts]
+ai-investor = "ai_investor.orchestration.service:run_cli"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ai_investor"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
