@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -114,7 +114,7 @@ class AgentOrchestrator:
 
     def _create_initial_message(self) -> str:
         """Create the initial message to send to the agent."""
-        today = datetime.utcnow().strftime("%Y-%m-%d")
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         
         return f"""Today is {today}. Please perform a comprehensive investment analysis:
 
@@ -140,7 +140,7 @@ Document your thought process clearly."""
             "AI INVESTOR - AGENT ANALYSIS REPORT",
             "=" * 60,
             "",
-            f"Analysis Date: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}",
+            f"Analysis Date: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}",
             f"Agent Iterations: {agent_result.get('iterations', 0)}",
             f"Tools Used: {len(agent_result.get('tool_calls', []))}",
             "",

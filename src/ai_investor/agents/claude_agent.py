@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import json
-from typing import Any, Dict, Iterable, List
+from typing import Any
 
 from anthropic import Anthropic
 from anthropic.types import MessageParam
@@ -22,7 +22,7 @@ class ClaudeAnalyst:
         self._client = Anthropic(api_key=settings.anthropic_api_key)
         self._model = "claude-3-5-sonnet-latest"
 
-    def summarize_news(self, ticker: str, articles: Iterable[dict]) -> List[dict]:
+    def summarize_news(self, ticker: str, articles: list[dict]) -> list[dict]:
         """Ask Claude to cluster recent articles into narrative insights."""
 
         articles_payload = [
@@ -91,10 +91,10 @@ class ClaudeAnalyst:
         self,
         system_prompt: str,
         initial_message: str,
-        tools: List[Dict[str, Any]],
+        tools: list[dict[str, Any]],
         tool_executor: Any,
         max_iterations: int = 10,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Run Claude in an agentic loop with MCP tools.
         
@@ -108,7 +108,7 @@ class ClaudeAnalyst:
         Returns:
             Dict with 'content' (final response), 'iterations', and 'tool_calls'
         """
-        messages: List[MessageParam] = [
+        messages: list[MessageParam] = [
             {
                 "role": "user",
                 "content": initial_message,
@@ -116,7 +116,7 @@ class ClaudeAnalyst:
         ]
         
         iteration = 0
-        all_tool_calls: List[Dict[str, Any]] = []
+        all_tool_calls: list[dict[str, Any]] = []
         
         logger.info("Starting Claude agent loop with %d tools available", len(tools))
         

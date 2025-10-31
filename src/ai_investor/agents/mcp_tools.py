@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable
 
 # MCP Tool schema definitions
-MCP_TOOL_SCHEMAS: List[Dict[str, Any]] = [
+MCP_TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "name": "get_nordnet_positions",
         "description": (
@@ -164,7 +164,7 @@ class MCPToolExecutor:
         self.shortlist = shortlist_pipeline
         
         # Map tool names to implementation functions
-        self._tool_map: Dict[str, Callable] = {
+        self._tool_map: dict[str, Callable] = {
             "get_nordnet_positions": self._get_positions,
             "get_available_funds": self._get_funds,
             "get_stock_fundamentals": self._get_fundamentals,
@@ -174,7 +174,7 @@ class MCPToolExecutor:
             "get_shortlist": self._get_shortlist,
         }
 
-    def execute(self, tool_name: str, tool_input: Dict[str, Any]) -> Any:
+    def execute(self, tool_name: str, tool_input: dict[str, Any]) -> Any:
         """Execute a tool by name with given input."""
         if tool_name not in self._tool_map:
             raise ValueError(f"Unknown tool: {tool_name}")
@@ -182,37 +182,37 @@ class MCPToolExecutor:
         handler = self._tool_map[tool_name]
         return handler(**tool_input)
 
-    def _get_positions(self) -> List[Dict[str, Any]]:
+    def _get_positions(self) -> list[dict[str, Any]]:
         """Get current Nordnet positions."""
         return self.nordnet.list_positions()
 
-    def _get_funds(self) -> Dict[str, float]:
+    def _get_funds(self) -> dict[str, float]:
         """Get available funds."""
         return self.nordnet.get_available_funds()
 
-    def _get_fundamentals(self, ticker: str) -> Dict[str, Any]:
+    def _get_fundamentals(self, ticker: str) -> dict[str, Any]:
         """Get stock fundamentals."""
         return self.eodhd.get_fundamentals(ticker)
 
-    def _get_news(self, ticker: str, lookback_days: int = 30) -> List[Dict[str, Any]]:
+    def _get_news(self, ticker: str, lookback_days: int = 30) -> list[dict[str, Any]]:
         """Get stock news."""
         return self.eodhd.get_news(ticker, lookback_days)
 
     def _evaluate_decision(
-        self, ticker: str, fundamentals: Dict[str, Any], news: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, ticker: str, fundamentals: dict[str, Any], news: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Evaluate investment decision for a stock."""
         thesis = self.engine.evaluate(ticker, fundamentals, news)
         return thesis.dict()
 
     def _execute_trade(
         self, ticker: str, side: str, quantity: int, price: float
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute a trade (mocked)."""
         return self.nordnet.place_order(
             ticker=ticker, side=side, quantity=quantity, price=price
         )
 
-    def _get_shortlist(self) -> Dict[str, Any]:
+    def _get_shortlist(self) -> dict[str, Any]:
         """Get current shortlist."""
         return self.shortlist.ensure_shortlist()
