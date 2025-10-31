@@ -41,6 +41,24 @@ class NordnetClient:
 
         raise NotImplementedError("Real Nordnet authentication not yet implemented")
 
+    def get_available_funds(self) -> dict[str, float]:
+        """Return available cash/funds for trading (mocked for testing)."""
+        if not self._authenticated:
+            self.authenticate()
+
+        if self._mock_mode:
+            logger.info("MOCK: Fetching available funds for account_id=%s", self._account_id)
+            mock_funds = {
+                "currency": "USD",
+                "available_cash": 10000.00,
+                "total_value": 13505.75,  # cash + positions
+                "invested_value": 3505.75,
+            }
+            logger.info("MOCK: Available funds: $%.2f", mock_funds["available_cash"])
+            return mock_funds
+
+        raise NotImplementedError("Real Nordnet funds endpoint not yet implemented")
+
     def list_positions(self) -> list[dict]:
         """Return positions for configured account (mocked for testing)."""
         if not self._authenticated:

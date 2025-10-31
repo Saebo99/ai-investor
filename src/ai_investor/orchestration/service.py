@@ -200,6 +200,29 @@ class DailyOrchestrator:
             logger.error("Failed to send summary email: %s", exc)
 
 
+@app.command(name="run-agent")
+def run_agent() -> None:
+    """Execute the agent-based orchestration workflow with MCP tools."""
+    from ai_investor.agents.agent_orchestrator import AgentOrchestrator
+    from ai_investor.utils.emailer import send_email
+    
+    orchestrator = AgentOrchestrator()
+    result = orchestrator.run()
+    
+    # Display result in console
+    console.print("\n[bold green]Agent Analysis Complete[/bold green]\n")
+    console.print(result.get("content", "No content available"))
+    
+    # Send email report
+    try:
+        email_body = orchestrator.format_email_report(result)
+        send_email("AI Investor - Agent Analysis Report", email_body)
+        console.print("\n[green]Email report sent successfully[/green]")
+    except Exception as exc:
+        logger.error("Failed to send email report: %s", exc)
+        console.print(f"\n[yellow]Warning: Email report failed: {exc}[/yellow]")
+
+
 @app.command(name="run-daily")
 def run_daily() -> None:
     """Execute the full orchestration pipeline once."""
