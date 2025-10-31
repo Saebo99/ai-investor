@@ -24,7 +24,10 @@ Portfolio State ───────────────────┘    
 
 - **Decision Engine (`src/ai_investor/decision/engine.py`)**
   - Blends quantitative metrics (dividend yield, payout ratio, growth, valuation) with qualitative narratives distilled via Claude from EODHD news.
-  - Emits structured investment theses detailing buy/hold/sell recommendations, confidence scores, and exit triggers.
+  - **Long-term holding focus:** Incorporates stability scoring (debt ratios, beta), minimum holding periods (90 days default), and position-aware thresholds to discourage trend-chasing.
+  - Higher buy thresholds for new positions (0.75 vs 0.70) and lower exit thresholds for held positions (0.35 vs 0.40) create a bias toward patient capital deployment.
+  - Enforces minimum holding period protection: within 90 days, positions are forced to HOLD unless catastrophic score deterioration occurs.
+  - Emits structured investment theses detailing buy/hold/trim/exit recommendations, conviction scores, holding period information, and catalysts/risks.
 
 - **Claude Agents (`src/ai_investor/agents/`)**
   - Research Agent orchestrates MCP queries, data summarisation, and thesis drafting.

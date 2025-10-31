@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import logging
+from datetime import datetime
+from pathlib import Path
 from typing import List
 
 import typer
@@ -31,9 +33,10 @@ class DailyOrchestrator:
     def __init__(self) -> None:
         self._settings = get_settings()
         self._shortlist = ShortlistPipeline()
-        self._engine = DecisionEngine()
+        self._engine = None  # Will initialize with positions in run()
         self._approvals = CliApprovalGateway()
         self._thesis_log = thesis_logger()
+        self._thesis_log_path = self._settings.thesis_storage_path
 
     def _ticker_symbol(self, entry: dict) -> str:
         return entry.get("code") or entry.get("ticker") or entry.get("symbol")
@@ -56,6 +59,22 @@ class DailyOrchestrator:
         }
 
     def run(self) -> None:
+        # Fetch current positions first
+        positions = []
+        try:
+            with NordnetClient(mock_mode=True) as broker:
+                broker.authenticate()
+                positions = broker.list_positions()
+                logger.info("Fetched %d current positions", len(positions))
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Failed to fetch positions (continuing with empty): %s", exc)
+        
+        # Initialize decision engine with positions and thesis log path
+        self._engine = DecisionEngine(
+            positions=positions, 
+            thesis_log_path=Path(self._thesis_log_path)
+        )
+        
         shortlist = self._shortlist.ensure_shortlist()
         tickers = shortlist.get("tickers", [])
         console.print(f"Evaluating {len(tickers)} shortlisted securities")
@@ -76,16 +95,15 @@ class DailyOrchestrator:
                     result = self._approvals.request(thesis, proposed_order)
                     if result.approved and proposed_order:
                         try:
-                            with NordnetClient() as broker:
+                            with NordnetClient(mock_mode=True) as broker:
                                 broker.authenticate()
-                                broker.place_order(
+                                order_result = broker.place_order(
                                     ticker=proposed_order["ticker"],
                                     side=proposed_order["side"],
                                     quantity=proposed_order["quantity"],
                                     price=proposed_order["price"],
                                 )
-                        except NotImplementedError:
-                            console.print("Nordnet integration not yet implemented; skipping order.")
+                                console.print(f"[yellow]Order submitted (MOCK): {order_result['order_id']}[/yellow]")
                         except Exception as exc:  # noqa: BLE001
                             logger.exception("Failed to submit order for %s: %s", ticker, exc)
 
@@ -102,13 +120,84 @@ class DailyOrchestrator:
 
     def _send_summary_email(self, theses: List[Thesis]) -> None:
         if not theses:
+            logger.info("No theses to email")
             return
-        lines = ["Daily AI Investor Summary", ""]
-        for thesis in theses:
-            lines.append(
-                f"{thesis.ticker}: {thesis.recommendation.value.upper()} (conviction {thesis.conviction:.2f})"
-            )
-        send_email("AI Investor Daily Summary", "\n".join(lines))
+        
+        lines = [
+            "="*60,
+            "AI INVESTOR - DAILY SUMMARY",
+            "="*60,
+            "",
+            f"Analysis Date: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}",
+            f"Total Securities Evaluated: {len(theses)}",
+            "",
+        ]
+        
+        # Group by recommendation
+        buys = [t for t in theses if t.recommendation == Recommendation.BUY]
+        holds = [t for t in theses if t.recommendation == Recommendation.HOLD]
+        trims = [t for t in theses if t.recommendation == Recommendation.TRIM]
+        exits = [t for t in theses if t.recommendation == Recommendation.EXIT]
+        
+        if buys:
+            lines.extend([
+                "BUY RECOMMENDATIONS:",
+                "-" * 60,
+            ])
+            for thesis in sorted(buys, key=lambda t: t.conviction, reverse=True):
+                lines.extend([
+                    f"\n{thesis.ticker} - Conviction: {thesis.conviction:.2f}",
+                    f"  Quantitative: {thesis.quantitative_score:.2f} | Qualitative: {thesis.qualitative_score:.2f}",
+                    f"  Catalysts: {', '.join(thesis.catalysts) if thesis.catalysts else 'None'}",
+                    f"  Risks: {', '.join(thesis.risks) if thesis.risks else 'None'}",
+                ])
+        
+        if exits:
+            lines.extend([
+                "",
+                "EXIT RECOMMENDATIONS:",
+                "-" * 60,
+            ])
+            for thesis in sorted(exits, key=lambda t: t.conviction):
+                lines.extend([
+                    f"\n{thesis.ticker} - Conviction: {thesis.conviction:.2f}",
+                    f"  Quantitative: {thesis.quantitative_score:.2f} | Qualitative: {thesis.qualitative_score:.2f}",
+                    f"  Risks: {', '.join(thesis.risks) if thesis.risks else 'None'}",
+                ])
+        
+        if holds:
+            lines.extend([
+                "",
+                f"HOLD RECOMMENDATIONS: {len(holds)} positions",
+                "-" * 60,
+            ])
+            for thesis in sorted(holds, key=lambda t: t.conviction, reverse=True)[:5]:  # Top 5 holds
+                lines.append(
+                    f"  {thesis.ticker}: {thesis.conviction:.2f} "
+                    f"(Q:{thesis.quantitative_score:.2f} QL:{thesis.qualitative_score:.2f})"
+                )
+        
+        if trims:
+            lines.extend([
+                "",
+                f"TRIM RECOMMENDATIONS: {len(trims)} positions",
+            ])
+            for thesis in trims:
+                lines.append(f"  {thesis.ticker}: {thesis.conviction:.2f}")
+        
+        lines.extend([
+            "",
+            "="*60,
+            "This is an automated investment analysis report.",
+            "All recommendations require manual approval before execution.",
+            "="*60,
+        ])
+        
+        try:
+            send_email("AI Investor Daily Summary", "\n".join(lines))
+            logger.info("Summary email sent successfully")
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Failed to send summary email: %s", exc)
 
 
 @app.command(name="run-daily")
@@ -133,6 +222,29 @@ def run_report() -> None:
 
     orchestrator = DailyOrchestrator()
     orchestrator.run_report()
+
+
+@app.command(name="list-positions")
+def list_positions() -> None:
+    """List current positions from Nordnet (mocked)."""
+
+    from ai_investor.broker.nordnet_client import NordnetClient
+
+    try:
+        with NordnetClient(mock_mode=True) as broker:
+            positions = broker.list_positions()
+            if positions:
+                console.print("[bold]Current Positions (MOCK DATA):[/bold]")
+                for pos in positions:
+                    console.print(
+                        f"  {pos['ticker']}: {pos['quantity']} shares @ ${pos['average_price']:.2f} "
+                        f"(Current: ${pos['current_price']:.2f}, P/L: ${pos['unrealized_pnl']:.2f} / {pos['unrealized_pnl_percent']:.2f}%)"
+                    )
+            else:
+                console.print("No positions found.")
+    except Exception as exc:
+        logger.exception("Failed to fetch positions: %s", exc)
+        console.print(f"[red]Error fetching positions: {exc}[/red]")
 
 
 def run_cli() -> None:
