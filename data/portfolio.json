@@ -1,0 +1,36 @@
+{
+  "currency": "USD",
+  "available_funds": 2000.0,
+  "holdings": [
+    {
+      "ticker": "GOOG.US",
+      "name": "Alphabet Inc. Class C",
+      "shares": 5,
+      "average_cost": 262.946
+    },
+    {
+      "ticker": "AMZN.US",
+      "name": "Amazon.com Inc.",
+      "shares": 3,
+      "average_cost": 230.12
+    },
+    {
+      "ticker": "GJF.OL",
+      "name": "Gjensidige Forsikring ASA",
+      "shares": 20,
+      "average_cost": 290.15
+    },
+    {
+      "ticker": "TEL.OL",
+      "name": "Telenor ASA",
+      "shares": 56,
+      "average_cost": 173.475
+    },
+    {
+      "ticker": "NOVO-B.CO",
+      "name": "Novo Nordisk A/S",
+      "shares": 27,
+      "average_cost": 364.001
+    }
+  ]
+}
